@@ -2,8 +2,11 @@
 var _fs = require('fs'),
     _path = require('path'),
     _glob = require('glob'),
+    _ffi = require("node-ffi"),
     _minimatch = require('minimatch'),
     _wrench = require('wrench'),
+    _asyncblock = require("asyncblock"),
+    _exec = require('child_process').exec,
     _showdown = require('github-flavored-markdown');
 
 
@@ -91,7 +94,21 @@ function normalizeLineBreaks(str, lineEnd) {
 
 // showdown have issues with the gh-style code blocks
 var _rCodeBlocks = /^```\s*(\w+)\s*$([\s\S]*?)^```$/gm;
-
+var libc = new _ffi.Library(null, {
+  "system": ["int32", ["string"]]
+});
+var run = libc.system;
 function convertCodeBlocks(mdown){
-    return mdown.replace(_rCodeBlocks, '<pre><code>$2</code></pre>');
+  return mdown.replace(_rCodeBlocks, function(whole, p1, p2) {
+    var fd = _fs.openSync("/tmp/mdowntmp", "w");
+    _fs.writeSync(fd, p2, 0, "utf-8");
+    var output = run('pygmentize -f html -l ' + p1 + ' -o /tmp/mdownout /tmp/mdowntmp');
+    var stat = _fs.statSync("/tmp/mdownout");
+    
+    var id = _fs.openSync("/tmp/mdownout", "r");
+    var bytes = _fs.readSync(id, stat.size, 0, "utf-8");
+    _fs.closeSync(id);
+    return bytes[0];
+  });
+  //return mdown.replace(_rCodeBlocks, '<pre><code lang="$1">$2</code></pre>');
 }

@@ -31,7 +31,8 @@
     "glob": ">= 3.0.0",
     "minimatch": ">= 0.1.0",
     "commander": ">= 0.4.0",
-    "node-ffi": "*"
+    "node-ffi": "*",
+    "asyncblock": "*"
   },
   "main": "mdown.js",
   "bin": {
